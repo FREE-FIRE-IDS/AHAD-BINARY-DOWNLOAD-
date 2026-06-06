@@ -24,6 +24,12 @@ export default function WidgetCandlestick({
   const [prediction, setPrediction] = useState<'BULLISH' | 'BEARISH'>('BULLISH');
   const [aiConfidence, setAiConfidence] = useState(94.2);
   const countRef = useRef(0);
+  const dataRef = useRef<PriceTick[]>([]);
+
+  // Sync state data to ref
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   // Initialize and tick chart data
   useEffect(() => {
@@ -49,46 +55,45 @@ export default function WidgetCandlestick({
     
     setData(points);
     setCurrentPrice(parseFloat(price.toFixed(5)));
-  }, [selectedAsset]);
+  }, [selectedAsset, setCurrentPrice]);
 
   // Real-time ticking feed
   useEffect(() => {
     const interval = setInterval(() => {
-      setData((prevData) => {
-        if (prevData.length === 0) return prevData;
-        const lastPoint = prevData[prevData.length - 1];
-        
-        // Random binary style price movement
-        const isUp = Math.random() > 0.46;
-        const changeFactor = selectedAsset.symbol.includes('JPY') ? 0.05 : 
-                             selectedAsset.symbol.includes('BTC') ? 15 : 0.0002;
-        const change = (Math.random() * changeFactor + 0.0001) * (isUp ? 1 : -1);
-        const nextPrice = parseFloat((lastPoint.price + change).toFixed(selectedAsset.symbol.includes('JPY') ? 2 : selectedAsset.symbol.includes('BTC') ? 1 : 5));
-        
-        setCurrentPrice(nextPrice);
-        setDirection(isUp ? 'UP' : 'DOWN');
-        
-        // Update prediction and confidence dynamically every couple of ticks
-        countRef.current += 1;
-        if (countRef.current % 4 === 0) {
-          setPrediction(Math.random() > 0.4 ? 'BULLISH' : 'BEARISH');
-          setAiConfidence(parseFloat((85 + Math.random() * 13).toFixed(1)));
-        }
+      const currentPoints = dataRef.current;
+      if (currentPoints.length === 0) return;
+      const lastPoint = currentPoints[currentPoints.length - 1];
+      
+      // Random binary style price movement
+      const isUp = Math.random() > 0.46;
+      const changeFactor = selectedAsset.symbol.includes('JPY') ? 0.05 : 
+                           selectedAsset.symbol.includes('BTC') ? 15 : 0.0002;
+      const change = (Math.random() * changeFactor + 0.0001) * (isUp ? 1 : -1);
+      const nextPrice = parseFloat((lastPoint.price + change).toFixed(selectedAsset.symbol.includes('JPY') ? 2 : selectedAsset.symbol.includes('BTC') ? 1 : 5));
+      
+      setCurrentPrice(nextPrice);
+      setDirection(isUp ? 'UP' : 'DOWN');
+      
+      // Update prediction and confidence dynamically every couple of ticks
+      countRef.current += 1;
+      if (countRef.current % 4 === 0) {
+        setPrediction(Math.random() > 0.4 ? 'BULLISH' : 'BEARISH');
+        setAiConfidence(parseFloat((85 + Math.random() * 13).toFixed(1)));
+      }
 
-        const newTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const movingAverageSum = prevData.slice(-5).reduce((sum, item) => sum + item.price, 0) / 5;
-        
-        const nextPoints = [
-          ...prevData.slice(1),
-          {
-            time: newTime,
-            price: nextPrice,
-            sma: parseFloat(movingAverageSum.toFixed(selectedAsset.symbol.includes('JPY') ? 2 : 5)),
-            ema: parseFloat(((movingAverageSum + nextPrice) / 2).toFixed(selectedAsset.symbol.includes('JPY') ? 2 : 5))
-          }
-        ];
-        return nextPoints;
-      });
+      const newTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const movingAverageSum = currentPoints.slice(-5).reduce((sum, item) => sum + item.price, 0) / 5;
+      
+      const nextPoints = [
+        ...currentPoints.slice(1),
+        {
+          time: newTime,
+          price: nextPrice,
+          sma: parseFloat(movingAverageSum.toFixed(selectedAsset.symbol.includes('JPY') ? 2 : 5)),
+          ema: parseFloat(((movingAverageSum + nextPrice) / 2).toFixed(selectedAsset.symbol.includes('JPY') ? 2 : 5))
+        }
+      ];
+      setData(nextPoints);
     }, 2000);
 
     return () => clearInterval(interval);
