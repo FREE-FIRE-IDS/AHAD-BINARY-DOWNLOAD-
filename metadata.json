@@ -1,0 +1,6 @@
+{
+  "name": "AhadBinary Trading Bot",
+  "description": "Premium landing page for AHADBINARY Trading Bot. Download the official APK and explore live interactive 3D trading terminals, real-time binary market options widgets, and AI signal indicators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
